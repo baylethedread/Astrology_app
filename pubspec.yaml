@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^4.0.4
-
+  animate_do: ^2.0.0
 
 
 
