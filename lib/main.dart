@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Add Google Fonts package to pubspec.yaml
 
 void main() {
   runApp(const AstrologyApp());
@@ -10,7 +11,7 @@ class AstrologyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Removes the debug banner
+      debugShowCheckedModeBanner: false,
       title: "Astrology App",
       theme: ThemeData(
         primarySwatch: Colors.purple,
@@ -40,16 +41,37 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Welcome Text
+              // App Logo
+              CircleAvatar(
+                radius: 60,
+                backgroundColor: Colors.white.withOpacity(0.8),
+                child: Icon(
+                  Icons.star_rate_rounded,
+                  color: Colors.purpleAccent,
+                  size: 60,
+                ),
+              ),
+              SizedBox(height: 20),
+              // App Title
               Text(
-                "Welcome to Astrology App",
-                style: TextStyle(
-                  fontSize: 24,
+                "Astrology App",
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 10),
+              // Tagline
+              Text(
+                "Unlock the secrets of the stars",
+                style: GoogleFonts.lato(
+                  fontSize: 18,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white70,
+                ),
+              ),
+              SizedBox(height: 40),
               // Sign In Button
               ElevatedButton(
                 onPressed: () {
@@ -65,10 +87,17 @@ class WelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  elevation: 5,
                 ),
-                child: Text("Sign In"),
+                child: Text(
+                  "Sign In",
+                  style: GoogleFonts.lato(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               // Sign Up Button
               ElevatedButton(
                 onPressed: () {
@@ -84,8 +113,15 @@ class WelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  elevation: 5,
                 ),
-                child: Text("Sign Up"),
+                child: Text(
+                  "Sign Up",
+                  style: GoogleFonts.lato(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -95,34 +131,194 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
+  @override
+  _SignInScreenState createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Sign In"),
       ),
-      body: Center(
-        child: Text(
-          "Sign In Page",
-          style: TextStyle(fontSize: 20),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Username Field
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: "Username",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your username";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              // Password Field
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your password";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 40),
+              // Sign In Button
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // Perform Sign In action here
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Signing In...')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  elevation: 5,
+                ),
+                child: Text(
+                  "Sign In",
+                  style: GoogleFonts.lato(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends StatefulWidget {
+  @override
+  _SignUpScreenState createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Sign Up"),
       ),
-      body: Center(
-        child: Text(
-          "Sign Up Page",
-          style: TextStyle(fontSize: 20),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Username Field
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: "Username",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your username";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              // Email Field
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: "Email",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your email";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              // Password Field
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your password";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 40),
+              // Sign Up Button
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // Perform Sign Up action here
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Signing Up...')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  elevation: 5,
+                ),
+                child: Text(
+                  "Sign Up",
+                  style: GoogleFonts.lato(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
