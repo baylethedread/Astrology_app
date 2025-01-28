@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SignInScreen extends StatelessWidget {
+  const SignInScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,30 +21,30 @@ class SignInScreen extends StatelessWidget {
                   width: 100,
                   height: 100,
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 // Email Field
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
+                    prefixIcon: const Icon(Icons.email),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Password Field
                 TextField(
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 // Forgot Password Link
                 Align(
                   alignment: Alignment.centerRight,
@@ -51,13 +53,13 @@ class SignInScreen extends StatelessWidget {
                       // Add "Forgot Password" functionality here
                       print("Forgot Password Clicked");
                     },
-                    child: Text(
+                    child: const Text(
                       'Forgot Password?',
                       style: TextStyle(color: Colors.deepPurple),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Sign In Button
                 ElevatedButton(
                   onPressed: () {
@@ -70,26 +72,26 @@ class SignInScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 15.0),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 15.0),
                     child: Text(
                       'Sign In',
                       style: TextStyle(fontSize: 18),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Sign Up Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Don't have an account?"),
+                    const Text("Don't have an account?"),
                     TextButton(
                       onPressed: () {
                         // Navigate to Sign Up Screen
                         print("Sign Up Clicked");
                       },
-                      child: Text(
+                      child: const Text(
                         'Sign Up',
                         style: TextStyle(color: Colors.deepPurple),
                       ),

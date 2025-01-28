@@ -30,8 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^4.0.4
-  animate_do: ^2.0.0
+  google_fonts: ^6.2.1
+  animate_do: ^3.3.4
+  firebase_auth: ^5.4.1
+  firebase_core: ^3.10.1
 
 
 
@@ -48,7 +50,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
