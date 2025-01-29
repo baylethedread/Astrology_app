@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 
-
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -12,12 +11,14 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -34,12 +35,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
         duration: const Duration(seconds: 1),
         opacity: 1.0,
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF3A1C71), // Purple
-                Color(0xFFD76D77), // Pink
-                Color(0xFFFFAF7B)  // Peach
+              colors: isDarkMode
+                  ? [
+                Color(0xFF0A0F29), // Deep space blue
+                Color(0xFF1B1D3C), // Dark purple
+                Color(0xFF3D2C8D), // Mystic violet
+              ]
+                  : [
+                Color(0xFF3A1C71),
+                Color(0xFFD76D77),
+                Color(0xFFFFAF7B),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -56,7 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     FadeInUp(
                       duration: const Duration(seconds: 1),
                       child: Text(
-                        "Create a New Account",
+                        "Create Account",
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
@@ -71,29 +78,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          // Username Input Field
-                          TextFormField(
-                            controller: _usernameController,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter a username';
-                              }
-                              return null;
-                            },
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.8),
-                              hintText: "Enter your username",
-                              hintStyle: const TextStyle(color: Colors.black54),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
                           // Email Input Field
                           TextFormField(
                             controller: _emailController,
@@ -102,7 +86,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 return 'Please enter an email';
                               }
                               String pattern =
-                                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
+                                  r'^[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,4}$';
                               RegExp regex = RegExp(pattern);
                               if (!regex.hasMatch(value)) {
                                 return 'Please enter a valid email';
@@ -111,9 +95,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             },
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.8),
+                              fillColor: Colors.white.withOpacity(0.15),
                               hintText: "Enter your email",
-                              hintStyle: const TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.white70),
                               contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -138,9 +122,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             },
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.8),
+                              fillColor: Colors.white.withOpacity(0.15),
                               hintText: "Enter your password",
-                              hintStyle: const TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.white70),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Confirm Password Input Field
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.15),
+                              hintText: "Confirm your password",
+                              hintStyle: const TextStyle(color: Colors.white70),
                               contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -163,8 +174,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
+                                backgroundColor: isDarkMode
+                                    ? Colors.deepPurple
+                                    : Colors.white.withOpacity(0.8),
+                                foregroundColor: isDarkMode ? Colors.white : Colors.black,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),

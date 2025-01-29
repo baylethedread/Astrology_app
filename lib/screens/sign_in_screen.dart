@@ -16,6 +16,8 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -32,12 +34,18 @@ class _SignInScreenState extends State<SignInScreen> {
         duration: const Duration(seconds: 1),
         opacity: 1.0,
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF3A1C71), // Purple
-                Color(0xFFD76D77), // Pink
-                Color(0xFFFFAF7B)  // Peach
+              colors: isDarkMode
+                  ? [
+                Color(0xFF0A0F29), // Deep space blue
+                Color(0xFF1B1D3C), // Dark purple
+                Color(0xFF3D2C8D), // Mystic violet
+              ]
+                  : [
+                Color(0xFF3A1C71),
+                Color(0xFFD76D77),
+                Color(0xFFFFAF7B),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -77,7 +85,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 return 'Please enter an email';
                               }
                               String pattern =
-                                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
+                                  r'^[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,4}$';
                               RegExp regex = RegExp(pattern);
                               if (!regex.hasMatch(value)) {
                                 return 'Please enter a valid email';
@@ -86,9 +94,9 @@ class _SignInScreenState extends State<SignInScreen> {
                             },
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.8),
+                              fillColor: Colors.white.withOpacity(0.15),
                               hintText: "Enter your email",
-                              hintStyle: const TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.white70),
                               contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -113,9 +121,9 @@ class _SignInScreenState extends State<SignInScreen> {
                             },
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.8),
+                              fillColor: Colors.white.withOpacity(0.15),
                               hintText: "Enter your password",
-                              hintStyle: const TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.white70),
                               contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -138,8 +146,10 @@ class _SignInScreenState extends State<SignInScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
+                                backgroundColor: isDarkMode
+                                    ? Colors.deepPurple
+                                    : Colors.white.withOpacity(0.8),
+                                foregroundColor: isDarkMode ? Colors.white : Colors.black,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),

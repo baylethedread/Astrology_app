@@ -1,27 +1,56 @@
 import 'package:flutter/material.dart';
-import 'sign_in_screen.dart';
-import 'sign_up_screen.dart';
-import 'package:astrology_ui/screens/welcome_screen.dart'; // Import your WelcomeScreen
+import 'package:astrology_ui/screens/sign_in_screen.dart';
+import 'package:astrology_ui/screens/sign_up_screen.dart';
+import 'package:astrology_ui/screens/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void toggleTheme(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Auth Navigation',
+      title: 'StellarPath',
       theme: ThemeData(
+        brightness: Brightness.light,
         primarySwatch: Colors.purple,
+        scaffoldBackgroundColor: Colors.white,
       ),
-      // Define named routes
-      initialRoute: '/', // Set the initial route to the Welcome Screen
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF121212), // Dark space vibe
+        primaryColor: Colors.deepPurpleAccent,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.deepPurpleAccent,
+          background: Color(0xFF090A1A),
+          surface: Color(0xFF1B1D3C),
+          secondary: Colors.purpleAccent,
+          onPrimary: Colors.white,
+          onBackground: Colors.white70,
+          onSurface: Colors.white,
+        ),
+      ),
+      themeMode: _themeMode,
+      initialRoute: '/',
       routes: {
-        '/': (context) => const WelcomeScreen(), // Welcome screen route
+        '/': (context) => WelcomeScreen(toggleTheme: toggleTheme),
         '/signin': (context) => const SignInScreen(),
         '/signup': (context) => const SignUpScreen(),
       },
