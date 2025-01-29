@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "722000643153",
+    "project_id": "stellar-path-astro",
+    "storage_bucket": "stellar-path-astro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722000643153:android:e1845183e9e61b7b8b2470",
+        "android_client_info": {
+          "package_name": "com.example.astrology_ui"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs34QOwjsFMyMdkSsQJ5g9mjkOBl2Kn6E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

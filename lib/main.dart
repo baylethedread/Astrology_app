@@ -1,9 +1,14 @@
+import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
 import 'package:flutter/material.dart';
 import 'package:astrology_ui/screens/sign_in_screen.dart';
 import 'package:astrology_ui/screens/sign_up_screen.dart';
 import 'package:astrology_ui/screens/welcome_screen.dart';
+import 'package:astrology_ui/screens/home_screen.dart'; // Import HomeScreen
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Firebase is initialized before running the app
+  await Firebase.initializeApp(); // Initialize Firebase
+
   runApp(const MyApp());
 }
 
@@ -48,11 +53,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: _themeMode,
-      initialRoute: '/',
+      initialRoute: '/home', // Set HomeScreen as the initial route
       routes: {
         '/': (context) => WelcomeScreen(toggleTheme: toggleTheme),
         '/signin': (context) => const SignInScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/home': (context) => HomeScreen(), // Add the HomeScreen route
       },
     );
   }

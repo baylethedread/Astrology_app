@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:firebase_auth/firebase_auth.dart';  // Import FirebaseAuth
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,6 +15,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;  // FirebaseAuth instance
 
   @override
   Widget build(BuildContext context) {
@@ -165,12 +167,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           FadeInUp(
                             duration: const Duration(seconds: 1),
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
-                                  // Proceed with Sign Up logic
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Processing Sign Up')),
-                                  );
+                                  try {
+                                    // Attempt to sign up the user with Firebase
+                                    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+                                      email: _emailController.text.trim(),
+                                      password: _passwordController.text.trim(),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Sign Up Successful')),
+                                    );
+                                  } on FirebaseAuthException catch (e) {
+                                    String errorMessage = 'Error: ${e.message}';
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(errorMessage)),
+                                    );
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
