@@ -1,19 +1,49 @@
-import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:astrology_ui/screens/sign_in_screen.dart';
 import 'package:astrology_ui/screens/sign_up_screen.dart';
 import 'package:astrology_ui/screens/welcome_screen.dart';
-import 'package:astrology_ui/screens/home_screen.dart'; // Import HomeScreen
+import 'package:astrology_ui/screens/home_screen.dart';
+import 'package:astrology_ui/screens/profile_setup_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Firebase is initialized before running the app
-  await Firebase.initializeApp(); // Initialize Firebase
+  WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const MyApp());
+  try {
+    // Initialize Firebase
+    await Firebase.initializeApp();
+  } catch (e) {
+    print("Error initializing Firebase: $e");
+    return;
+  }
+
+  // Check if the user is signed in and if profile setup is complete
+  String initialRoute = await getInitialRoute();
+
+  runApp(MyApp(initialRoute: initialRoute));
+}
+
+Future<String> getInitialRoute() async {
+  User? user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+    if (userDoc.exists && userDoc['profileComplete'] == true) {
+      return '/home';
+    } else {
+      return '/profileSetup';
+    }
+  }
+
+  return '/';
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -40,7 +70,7 @@ class _MyAppState extends State<MyApp> {
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF121212), // Dark space vibe
+        scaffoldBackgroundColor: const Color(0xFF121212),
         primaryColor: Colors.deepPurpleAccent,
         colorScheme: const ColorScheme.dark(
           primary: Colors.deepPurpleAccent,
@@ -53,12 +83,22 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: _themeMode,
-      initialRoute: '/home', // Set HomeScreen as the initial route
-      routes: {
-        '/': (context) => WelcomeScreen(toggleTheme: toggleTheme),
-        '/signin': (context) => const SignInScreen(),
-        '/signup': (context) => const SignUpScreen(),
-        '/home': (context) => HomeScreen(), // Add the HomeScreen route
+      initialRoute: widget.initialRoute,
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/':
+            return MaterialPageRoute(builder: (context) => WelcomeScreen(toggleTheme: toggleTheme));
+          case '/signin':
+            return MaterialPageRoute(builder: (context) => const SignInScreen());
+          case '/signup':
+            return MaterialPageRoute(builder: (context) => const SignUpScreen());
+          case '/profileSetup':
+            return MaterialPageRoute(builder: (context) => ProfileSetupScreen());
+          case '/home':
+            return MaterialPageRoute(builder: (context) => HomeScreen(toggleTheme: toggleTheme));
+          default:
+            return null;
+        }
       },
     );
   }

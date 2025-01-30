@@ -1,33 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'birth_chart_screen.dart'; // Import other screens
-import 'compatibility_test_screen.dart'; // Import other screens
-import 'chatbot_screen.dart'; // Import other screens
-import 'package:astrology_ui/widgets/quick_access_card.dart';  // Adjust the path accordingly
+import 'birth_chart_screen.dart';
+import 'compatibility_test_screen.dart';
+import 'chatbot_screen.dart';
+import 'package:astrology_ui/widgets/quick_access_card.dart';
 
-class HomeScreen extends StatelessWidget {
-  // Define the functions for navigation
-  void navigateToBirthChart(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => BirthChartScreen()),
-    );
-  }
+class HomeScreen extends StatefulWidget {
+  final Function(bool) toggleTheme;
 
-  void navigateToCompatibilityTest(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CompatibilityTestScreen()),
-    );
-  }
+  const HomeScreen({Key? key, required this.toggleTheme}) : super(key: key);
 
-  void navigateToChatbot(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ChatbotScreen()),
-    );
-  }
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -42,6 +29,12 @@ class HomeScreen extends StatelessWidget {
               // Navigate to Profile Screen
             },
           ),
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              widget.toggleTheme(!isDarkMode);
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -49,7 +42,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Daily Horoscope
             Card(
               color: isDarkMode ? Colors.grey[800] : Colors.blue[50],
               elevation: 5,
@@ -76,27 +68,29 @@ class HomeScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
 
-            // Quick Access Cards
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Birth Chart
                 QuickAccessCard(
                   title: "Birth Chart",
                   icon: Icons.calendar_today,
-                  onTap: () => navigateToBirthChart(context),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BirthChartScreen()),
+                  ),
                 ),
-                // Compatibility Test
                 QuickAccessCard(
                   title: "Compatibility Test",
                   icon: Icons.favorite,
-                  onTap: () => navigateToCompatibilityTest(context),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CompatibilityTestScreen()),
+                  ),
                 ),
               ],
             ),
             SizedBox(height: 20),
 
-            // Personalized Insights
             Text(
               "Your Insights",
               style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.bold),

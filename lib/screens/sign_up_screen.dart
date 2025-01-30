@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:firebase_auth/firebase_auth.dart';  // Import FirebaseAuth
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // For Firestore
+import 'package:astrology_ui/screens/profile_setup_screen.dart'; // Import the ProfileSetupScreen
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -15,7 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;  // FirebaseAuth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +43,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             gradient: LinearGradient(
               colors: isDarkMode
                   ? [
-                Color(0xFF0A0F29), // Deep space blue
-                Color(0xFF1B1D3C), // Dark purple
-                Color(0xFF3D2C8D), // Mystic violet
+                Color(0xFF0A0F29),
+                Color(0xFF1B1D3C),
+                Color(0xFF3D2C8D),
               ]
                   : [
                 Color(0xFF3A1C71),
@@ -61,7 +63,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // SignUp Heading
                     FadeInUp(
                       duration: const Duration(seconds: 1),
                       child: Text(
@@ -74,13 +75,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Form for Sign Up
                     Form(
                       key: _formKey,
                       child: Column(
                         children: [
-                          // Email Input Field
                           TextFormField(
                             controller: _emailController,
                             validator: (value) {
@@ -108,8 +106,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Password Input Field
                           TextFormField(
                             controller: _passwordController,
                             obscureText: true,
@@ -135,8 +131,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Confirm Password Input Field
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: true,
@@ -162,8 +156,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 30),
-
-                          // Sign Up Button
                           FadeInUp(
                             duration: const Duration(seconds: 1),
                             child: ElevatedButton(
@@ -175,8 +167,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       email: _emailController.text.trim(),
                                       password: _passwordController.text.trim(),
                                     );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Sign Up Successful')),
+
+                                    // Create a user document in Firestore with an initial 'profileComplete' flag set to false
+                                    await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+                                      'email': _emailController.text.trim(),
+                                      'profileComplete': false,  // Set this flag to false initially
+                                    });
+
+                                    // Navigate to the Profile Setup Screen
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => ProfileSetupScreen()),
                                     );
                                   } on FirebaseAuthException catch (e) {
                                     String errorMessage = 'Error: ${e.message}';
@@ -207,13 +208,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Sign In Redirection Text
                           FadeInUp(
                             duration: const Duration(seconds: 1),
                             child: TextButton(
                               onPressed: () {
-                                // Navigate to Sign In
                                 Navigator.pushNamed(context, '/signin');
                               },
                               child: Text(
