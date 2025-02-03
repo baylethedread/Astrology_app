@@ -1,49 +1,22 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:astrology_ui/screens/sign_in_screen.dart';
 import 'package:astrology_ui/screens/sign_up_screen.dart';
 import 'package:astrology_ui/screens/welcome_screen.dart';
 import 'package:astrology_ui/screens/home_screen.dart';
 import 'package:astrology_ui/screens/profile_setup_screen.dart';
+import 'package:astrology_ui/wrapper.dart'; // Import the Wrapper
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
 
-  try {
-    // Initialize Firebase
-    await Firebase.initializeApp();
-  } catch (e) {
-    print("Error initializing Firebase: $e");
-    return;
-  }
-
-  // Check if the user is signed in and if profile setup is complete
-  String initialRoute = await getInitialRoute();
-
-  runApp(MyApp(initialRoute: initialRoute));
-}
-
-Future<String> getInitialRoute() async {
-  User? user = FirebaseAuth.instance.currentUser;
-
-  if (user != null) {
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-
-    if (userDoc.exists && userDoc['profileComplete'] == true) {
-      return '/home';
-    } else {
-      return '/profileSetup';
-    }
-  }
-
-  return '/';
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  final String initialRoute;
-  const MyApp({super.key, required this.initialRoute});
+  const MyApp({super.key});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -83,22 +56,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: _themeMode,
-      initialRoute: widget.initialRoute,
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/':
-            return MaterialPageRoute(builder: (context) => WelcomeScreen(toggleTheme: toggleTheme));
-          case '/signin':
-            return MaterialPageRoute(builder: (context) => const SignInScreen());
-          case '/signup':
-            return MaterialPageRoute(builder: (context) => const SignUpScreen());
-          case '/profileSetup':
-            return MaterialPageRoute(builder: (context) => ProfileSetupScreen());
-          case '/home':
-            return MaterialPageRoute(builder: (context) => HomeScreen(toggleTheme: toggleTheme));
-          default:
-            return null;
-        }
+      home: Wrapper(toggleTheme: toggleTheme), // Use Wrapper as the home screen
+      routes: {
+        '/signin': (context) => const SignInScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/profileSetup': (context) => ProfileSetupScreen(),
+        '/home': (context) => HomeScreen(toggleTheme: toggleTheme),
       },
     );
   }
