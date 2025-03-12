@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Added for consistent typography
 import 'package:astrology_ui/screens/sign_in_screen.dart';
 import 'package:astrology_ui/screens/sign_up_screen.dart';
 import 'package:astrology_ui/screens/welcome_screen.dart';
@@ -40,6 +41,41 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         primarySwatch: Colors.purple,
         scaffoldBackgroundColor: Colors.white,
+        // Added textTheme to apply Google Fonts globally
+        textTheme: TextTheme(
+          headlineLarge: GoogleFonts.playfairDisplay(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          bodyMedium: GoogleFonts.poppins(
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+          bodySmall: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.black54,
+          ),
+        ),
+        // Ensure icons and other UI elements adapt to the light theme
+        iconTheme: const IconThemeData(color: Colors.black54),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 2,
+          titleTextStyle: GoogleFonts.playfairDisplay(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          iconTheme: const IconThemeData(color: Colors.black54),
+        ),
+        cardTheme: CardTheme(
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          color: Colors.blue[50],
+        ),
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
@@ -53,6 +89,41 @@ class _MyAppState extends State<MyApp> {
           onPrimary: Colors.white,
           onBackground: Colors.white70,
           onSurface: Colors.white,
+        ),
+        // Added textTheme for dark mode
+        textTheme: TextTheme(
+          headlineLarge: GoogleFonts.playfairDisplay(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          bodyMedium: GoogleFonts.poppins(
+            fontSize: 16,
+            color: Colors.white70,
+          ),
+          bodySmall: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.white54,
+          ),
+        ),
+        // Ensure icons and other UI elements adapt to the dark theme
+        iconTheme: const IconThemeData(color: Colors.white54),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF1B1D3C),
+          elevation: 2,
+          titleTextStyle: GoogleFonts.playfairDisplay(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          iconTheme: const IconThemeData(color: Colors.white54),
+        ),
+        cardTheme: CardTheme(
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          color: const Color(0xFF1B1D3C),
         ),
       ),
       themeMode: _themeMode,
