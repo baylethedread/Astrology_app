@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For AnnotatedRegion
 import 'package:google_fonts/google_fonts.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:astrology_ui/constants/const.dart';
+import 'package:astrology_ui/theme/app_theme.dart'; // Import the theme file
 
 class ChatbotScreen extends StatefulWidget {
   final Map<String, dynamic> userProfile;
@@ -168,7 +170,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       appBar: AppBar(
         title: Text(
           "Chat with AstroBot",
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black87,
@@ -185,159 +187,171 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isTyping && index == _messages.length) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12.0),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDarkMode ? Brightness.dark : Brightness.light,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppTheme.getGradient(context),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: _messages.length + (_isTyping ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (_isTyping && index == _messages.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Typing',
+                                  style: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
+                                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      isDarkMode ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      );
+                    }
+
+                    final message = _messages[index];
+                    final isUser = message['sender'] == 'You';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Align(
+                        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Typing',
-                              style: GoogleFonts.poppins(
-                                color: isDarkMode ? Colors.white70 : Colors.black54,
-                                fontSize: 14,
+                            Container(
+                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                              decoration: BoxDecoration(
+                                color: isUser
+                                    ? (isDarkMode ? Colors.blue[700] : Colors.blue[100])
+                                    : (isDarkMode ? Colors.grey[800] : Colors.grey[200]),
+                                borderRadius: BorderRadius.circular(12.0),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                message['text']!,
+                                style: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
+                                  fontSize: 15,
+                                  color: isUser
+                                      ? (isDarkMode ? Colors.white : Colors.black87)
+                                      : (isDarkMode ? Colors.white70 : Colors.black54),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isDarkMode ? Colors.white70 : Colors.black54,
-                                ),
+                            const SizedBox(height: 4),
+                            Text(
+                              message['timestamp']!,
+                              style: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
+                                fontSize: 10,
+                                color: isDarkMode ? Colors.white54 : Colors.black45,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  );
-                }
-
-                final message = _messages[index];
-                final isUser = message['sender'] == 'You';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                  child: Align(
-                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                          decoration: BoxDecoration(
-                            color: isUser
-                                ? (isDarkMode ? Colors.blue[700] : Colors.blue[100])
-                                : (isDarkMode ? Colors.grey[800] : Colors.grey[200]),
-                            borderRadius: BorderRadius.circular(12.0),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            message['text']!,
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              color: isUser
-                                  ? (isDarkMode ? Colors.white : Colors.black87)
-                                  : (isDarkMode ? Colors.white70 : Colors.black54),
-                            ),
-                          ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                color: isDarkMode ? Colors.grey[900] : Colors.white,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        focusNode: _focusNode,
+                        autofocus: true,
+                        style: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          message['timestamp']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
+                        decoration: InputDecoration(
+                          hintText: 'Ask AstroBot...',
+                          hintStyle: GoogleFonts.jetBrainsMono( // Replaced with JetBrains Mono
                             color: isDarkMode ? Colors.white54 : Colors.black45,
                           ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25.0),
+                            borderSide: BorderSide(
+                              color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            color: isDarkMode ? Colors.grey[900] : Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    focusNode: _focusNode,
-                    autofocus: true,
-                    style: GoogleFonts.poppins(
-                      color: isDarkMode ? Colors.white : Colors.black87,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Ask AstroBot...',
-                      hintStyle: GoogleFonts.poppins(
-                        color: isDarkMode ? Colors.white54 : Colors.black45,
                       ),
-                      border: OutlineInputBorder(
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(25.0),
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(25.0),
-                        borderSide: BorderSide(
-                          color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                        onTap: () {
+                          if (_messageController.text.isNotEmpty) {
+                            _addUserMessage(_messageController.text);
+                            _messageController.clear();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10.0),
+                          child: const Icon(
+                            Icons.send,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                       ),
-                      filled: true,
-                      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Material(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(25.0),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(25.0),
-                    onTap: () {
-                      if (_messageController.text.isNotEmpty) {
-                        _addUserMessage(_messageController.text);
-                        _messageController.clear();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10.0),
-                      child: const Icon(
-                        Icons.send,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
