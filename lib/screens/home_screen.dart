@@ -55,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (user != null) {
         final userService = UserService();
         _userProfile = await userService.getUserProfile(user.uid);
+        print('Fetched userProfile: $_userProfile'); // Debug print
         if (_userProfile != null) {
           final zodiacSign = _userProfile!['zodiacSign'] as String?;
           if (zodiacSign != null && _horoscopes.containsKey(zodiacSign)) {
@@ -154,7 +155,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         QuickAccessCard(
                           title: "Chat with AstroBot",
                           icon: Icons.chat_bubble,
-                          onTap: () => setState(() => _selectedIndex = 3),
+                          onTap: () {
+                            if (_userProfile == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please complete your profile first!'),
+                                ),
+                              );
+                            } else {
+                              setState(() => _selectedIndex = 3);
+                            }
+                          },
                         ),
                         QuickAccessCard(
                           title: "Profile",
@@ -189,7 +200,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       BirthChartScreen(),
       CompatibilityTestScreen(),
-      ChatbotScreen(),
+      _userProfile != null
+          ? ChatbotScreen(
+        userProfile: {
+          'zodiac_sign': _userProfile!['zodiacSign'],
+          'birth_date': _userProfile!['birthDate'], // Match Firestore key
+        },
+      )
+          : const Center(
+        child: Text(
+          'Please complete your profile to chat with AstroBot!',
+          textAlign: TextAlign.center,
+        ),
+      ),
       ProfileScreen(),
     ];
 
@@ -233,9 +256,17 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          if (index == 3 && _userProfile == null) { // Index 3 is AstroBot
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please complete your profile first!'),
+              ),
+            );
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
         },
         backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
         selectedItemColor: Colors.blue,

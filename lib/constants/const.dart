@@ -1,0 +1,2 @@
+
+//const String openAIAPIKey = "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";

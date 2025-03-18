@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
+import 'package:astrology_ui/constants/const.dart';
 
 class ChatbotScreen extends StatefulWidget {
+  final Map<String, dynamic> userProfile;
+
+  ChatbotScreen({required this.userProfile});
+
   @override
   _ChatbotScreenState createState() => _ChatbotScreenState();
 }
@@ -10,44 +16,146 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final List<Map<String, String>> _messages = [
     {'sender': 'AstroBot', 'text': 'Hey there! I’m AstroBot, your astrology buddy. What’s on your mind?', 'timestamp': '10:00'},
   ];
+  final List<Messages> _conversationHistory = [];
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   bool _isTyping = false;
+  late OpenAI _openAI;
+
+  @override
+  void initState() {
+    super.initState();
+    _openAI = OpenAI.instance.build(
+      token: openAIAPIKey,
+      baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 20)),
+      enableLog: true,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+      FocusScope.of(context).requestFocus(_focusNode);
+      print('Focus requested on _focusNode');
+    });
+
+    _conversationHistory.add(Messages(
+      role: Role.system,
+      content: 'You are AstroBot, an astrology expert. The user is a ${widget.userProfile['zodiac_sign'] ?? 'unknown zodiac sign'} born on ${widget.userProfile['birth_date'] ?? 'unknown date'}. Provide astrology-related responses based on this profile.',
+    ));
+    _conversationHistory.add(Messages(
+      role: Role.assistant,
+      content: 'Hey there! I’m AstroBot, your astrology buddy. What’s on your mind?',
+    ));
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   void _addUserMessage(String message) {
     setState(() {
       _messages.add({
         'sender': 'You',
-        'text': message,
-        'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5), // Safe timestamp
+        'text': message.trim(),
+        'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5),
       });
+      _scrollToBottom();
     });
-    _simulateBotResponse();
+
+    _conversationHistory.add(Messages(
+      role: Role.user,
+      content: message.trim(),
+    ));
+
+    _getChatResponse();
   }
 
-  void _simulateBotResponse() {
+  Future<void> _getChatResponse() async {
     setState(() => _isTyping = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) { // Ensure widget is still mounted
+
+    try {
+      // Convert List<Messages> to List<Map<String, dynamic>>
+      final messagesForApi = _conversationHistory.map((msg) => {
+        "role": msg.role.name, // Role.system -> "system", Role.user -> "user", etc.
+        "content": msg.content,
+      }).toList();
+
+      // Create the chat completion request
+      final request = ChatCompleteText(
+        messages: messagesForApi, // Pass the converted list
+        maxToken: 200,
+        model: GptTurboChatModel(),
+      );
+
+      // Send request to OpenAI
+      ChatCTResponse? response = await _openAI.onChatCompletion(request: request);
+
+      if (response != null && response.choices.isNotEmpty) {
+        for (var element in response.choices) {
+          if (element.message != null) {
+            String botResponse = element.message!.content;
+            setState(() {
+              _messages.add({
+                'sender': 'AstroBot',
+                'text': botResponse,
+                'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5),
+              });
+              _conversationHistory.add(Messages(
+                role: Role.assistant,
+                content: botResponse,
+              ));
+              _scrollToBottom();
+            });
+          }
+        }
+      } else {
         setState(() {
-          _isTyping = false;
           _messages.add({
             'sender': 'AstroBot',
-            'text': 'I’m still setting up my star charts! Try asking about your lucky number or color.',
+            'text': 'Sorry, I couldn’t generate a response. Please try again.',
             'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5),
           });
+          _scrollToBottom();
         });
       }
-    });
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'sender': 'AstroBot',
+          'text': 'Error: $e',
+          'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5),
+        });
+        _scrollToBottom();
+      });
+    } finally {
+      setState(() => _isTyping = false);
+    }
   }
 
   void _clearChat() {
     setState(() {
       _messages.clear();
+      _conversationHistory.clear();
       _messages.add({
         'sender': 'AstroBot',
         'text': 'Chat cleared! Let’s start fresh—what’s up?',
         'timestamp': DateTime.now().toString().split(' ')[1].substring(0, 5),
       });
+      _conversationHistory.add(Messages(
+        role: Role.system,
+        content: 'You are AstroBot, an astrology expert. The user is a ${widget.userProfile['zodiac_sign'] ?? 'unknown zodiac sign'} born on ${widget.userProfile['birth_date'] ?? 'unknown date'}. Provide astrology-related responses based on this profile.',
+      ));
+      _conversationHistory.add(Messages(
+        role: Role.assistant,
+        content: 'Chat cleared! Let’s start fresh—what’s up?',
+      ));
+      _scrollToBottom();
     });
   }
 
@@ -56,6 +164,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(
           "Chat with AstroBot",
@@ -80,6 +189,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16.0),
               itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
@@ -180,6 +290,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    focusNode: _focusNode,
+                    autofocus: true,
                     style: GoogleFonts.poppins(
                       color: isDarkMode ? Colors.white : Colors.black87,
                     ),
@@ -228,5 +340,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 }
