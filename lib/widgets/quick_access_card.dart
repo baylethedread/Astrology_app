@@ -1,43 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class QuickAccessCard extends StatelessWidget {
-  final String title;  // Title to display on the card
-  final IconData icon; // Icon to display on the card
-  final VoidCallback onTap; // Action when the card is tapped
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
 
-  // Constructor to initialize the card widget with required data
-  QuickAccessCard({
+  const QuickAccessCard({
+    Key? key,
     required this.title,
     required this.icon,
     required this.onTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap, // Handle tap action
-      child: Card(
-        color: Colors.blue[50],  // Light blue color for the card background
-        elevation: 5,  // Add elevation for shadow effect
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15), // Rounded corners
-        ),
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    print('QuickAccessCard - Applying text color: Colors.black, isDarkMode: $isDarkMode'); // Debug print
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDarkMode ? Colors.grey[200] : Theme.of(context).cardTheme.color, // Light background in dark mode
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),  // Padding inside the card
+          padding: const EdgeInsets.all(12.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,  // Center content in the card
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,  // Display the icon
-                size: 40,  // Size of the icon
-                color: Colors.blue,  // Icon color
-              ),
-              SizedBox(height: 10),  // Space between icon and text
-              Text(
-                title,  // Display the title
-                style: TextStyle(
-                  fontSize: 16,  // Font size for the title
-                  fontWeight: FontWeight.bold,  // Bold font style
+              Icon(icon, size: 30, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 8),
+              DefaultTextStyle.merge(
+                style: const TextStyle(color: Colors.black), // Force black color
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 14,
+                    color: Colors.black, // Explicitly set to black
+                  ),
+                  maxLines: 2, // Allow up to two lines for the line break
+                  // Removed overflow: TextOverflow.ellipsis since line break handles visibility
                 ),
               ),
             ],
