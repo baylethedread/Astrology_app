@@ -166,16 +166,23 @@ class _HoroscopeScreenState extends State<HoroscopeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildProgressCircle('Love', 80, Colors.red),
-                        _buildProgressCircle('Business', 85, Colors.green),
-                        _buildProgressCircle('Health', 75, Colors.purple),
+                        _buildProgressCircle(
+                          'Love',
+                          int.parse(_horoscopeData?['love_percentage'] ?? '0'),
+                          Colors.red,
+                        ),
+                        _buildProgressCircle(
+                          'Business',
+                          int.parse(_horoscopeData?['business_percentage'] ?? '0'),
+                          Colors.green,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
                     // Horoscope Sections
                     ExpansionTile(
                       title: Text(
-                        'Overall horoscope',
+                        'Overall Horoscope',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -239,6 +246,42 @@ class _HoroscopeScreenState extends State<HoroscopeScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    // Additional Horoscope Details (Mood, Color, Lucky Number, Lucky Time)
+                    Text(
+                      'Additional Insights',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(15.0),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildDetailRow('Mood', _horoscopeData?['mood'] ?? 'Unknown', Icons.mood),
+                          const SizedBox(height: 10),
+                          _buildDetailRow('Color', _horoscopeData?['color'] ?? 'Unknown', Icons.color_lens),
+                          const SizedBox(height: 10),
+                          _buildDetailRow('Lucky Number', _horoscopeData?['lucky_number'] ?? '0', Icons.numbers),
+                          const SizedBox(height: 10),
+                          _buildDetailRow('Lucky Time', _horoscopeData?['lucky_time'] ?? 'Unknown', Icons.access_time),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -255,26 +298,67 @@ class _HoroscopeScreenState extends State<HoroscopeScreen> {
         SizedBox(
           width: 60,
           height: 60,
-          child: CircularProgressIndicator(
-            value: percentage / 100,
-            backgroundColor: Colors.grey.withOpacity(0.3),
-            color: color,
-            strokeWidth: 6,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: percentage / 100,
+                backgroundColor: Colors.grey.withOpacity(0.3),
+                color: color,
+                strokeWidth: 6,
+              ),
+              Text(
+                '$percentage%',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 5),
-        Text(
-          '$percentage%',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 14,
-            color: Colors.white,
-          ),
-        ),
         Text(
           label,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 12,
             color: Colors.white70,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: Colors.purple,
+          size: 24,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$label:',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
+              ),
+            ],
           ),
         ),
       ],
