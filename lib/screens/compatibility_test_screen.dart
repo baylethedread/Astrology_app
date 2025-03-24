@@ -1,19 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For AnnotatedRegion
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:astrology_ui/theme/app_theme.dart'; // Import the theme file
+import 'package:astrology_ui/theme/app_theme.dart';
+import 'package:astrology_ui/services/chat_service.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:percent_indicator/percent_indicator.dart';
+
+// Define the CompatibilityResult model
+class CompatibilityResult {
+  final int love;
+  final int business;
+  final int health;
+  final String overall;
+  final String loveDescription;
+  final String businessDescription;
+
+  CompatibilityResult({
+    required this.love,
+    required this.business,
+    required this.health,
+    required this.overall,
+    required this.loveDescription,
+    required this.businessDescription,
+  });
+
+  factory CompatibilityResult.fromJson(Map<String, dynamic> json) {
+    return CompatibilityResult(
+      love: int.tryParse(json['love'].toString()) ?? 50,
+      business: int.tryParse(json['business'].toString()) ?? 50,
+      health: int.tryParse(json['health'].toString()) ?? 50,
+      overall: json['overall']?.toString() ?? 'Compatibility data unavailable.',
+      loveDescription: json['loveDescription']?.toString() ?? 'No love description available.',
+      businessDescription: json['businessDescription']?.toString() ?? 'No business description available.',
+    );
+  }
+}
 
 class CompatibilityTestScreen extends StatefulWidget {
   @override
   _CompatibilityTestScreenState createState() => _CompatibilityTestScreenState();
 }
 
-class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
+class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> with SingleTickerProviderStateMixin {
   String? _selectedSign1;
   String? _selectedSign2;
-  Map<String, dynamic>? _compatibilityResult;
+  CompatibilityResult? _compatibilityResult;
+  bool _isLoading = false;
 
-  // List of zodiac signs with updated icons
   final List<Map<String, dynamic>> _zodiacSigns = [
     {'name': 'Aries', 'icon': Icons.local_fire_department},
     {'name': 'Taurus', 'icon': Icons.agriculture},
@@ -29,52 +62,45 @@ class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
     {'name': 'Pisces', 'icon': Icons.water},
   ];
 
-  // Predefined compatibility data (example pairs)
-  final Map<String, Map<String, dynamic>> _compatibilityData = {
-    'Aries-Leo': {
-      'love': 80,
-      'business': 95,
-      'health': 60,
-      'overall': 'Great match! Both are fire signs with high energy.',
-      'loveDescription': 'A passionate and fiery connection awaits you.',
-      'businessDescription': 'Together, you’ll achieve great success in professional endeavors.',
-    },
-    'Aries-Cancer': {
-      'love': 40,
-      'business': 50,
-      'health': 60,
-      'overall': 'Challenging but possible with effort.',
-      'loveDescription': 'Emotional differences may create challenges.',
-      'businessDescription': 'Work on communication to improve collaboration.',
-    },
-    // Add more pairs as needed or use a default for undefined pairs
-  };
+  final ChatService _chatService = ChatService();
 
-  // Function to calculate compatibility
-  void _calculateCompatibility() {
+  void _calculateCompatibility() async {
     if (_selectedSign1 == null || _selectedSign2 == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select both zodiac signs.")),
       );
       return;
     }
-    String key = _getCompatibilityKey(_selectedSign1!, _selectedSign2!);
-    setState(() {
-      _compatibilityResult = _compatibilityData[key] ?? {
-        'love': 50,
-        'business': 50,
-        'health': 50,
-        'overall': 'Average compatibility. A balanced relationship is possible.',
-        'loveDescription': 'A steady relationship with room for growth.',
-        'businessDescription': 'Collaboration is possible with mutual effort.',
-      };
-    });
-  }
 
-  // Helper function to generate a unique key for compatibility lookup
-  String _getCompatibilityKey(String sign1, String sign2) {
-    List<String> signs = [sign1, sign2]..sort();
-    return signs.join('-');
+    setState(() {
+      _isLoading = true;
+      _compatibilityResult = null;
+    });
+
+    try {
+      final result = await _chatService.getCompatibility(_selectedSign1!, _selectedSign2!);
+      setState(() {
+        _compatibilityResult = CompatibilityResult.fromJson(result);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to fetch compatibility: $e")),
+      );
+      setState(() {
+        _compatibilityResult = CompatibilityResult(
+          love: 50,
+          business: 50,
+          health: 50,
+          overall: 'Failed to fetch compatibility. Please try again later.',
+          loveDescription: 'Unable to determine love compatibility.',
+          businessDescription: 'Unable to determine business compatibility.',
+        );
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -83,29 +109,25 @@ class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        // Handle device back button press
         if (_compatibilityResult != null) {
-          // If on result screen, return to selection screen
           setState(() {
             _compatibilityResult = null;
             _selectedSign1 = null;
             _selectedSign2 = null;
           });
-          return false; // Prevent pop
+          return false;
         } else {
-          // If on selection screen, show warning and prevent exit
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Press back again to exit the app.'),
               duration: Duration(seconds: 2),
             ),
           );
-          return false; // Prevent pop
+          return false;
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          // Conditionally show the back button only on the result screen
           leading: _compatibilityResult != null
               ? IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -118,10 +140,12 @@ class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
             },
             color: isDarkMode ? Colors.white : Colors.black,
           )
-              : null, // No leading widget on the selection screen
+              : null,
           title: Text(
             'Compatibility',
-            style: GoogleFonts.jetBrainsMono(
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
               color: isDarkMode ? Colors.white : Colors.black,
             ),
           ),
@@ -138,17 +162,17 @@ class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
             decoration: BoxDecoration(
               gradient: AppTheme.getGradient(context),
               image: const DecorationImage(
-                image: AssetImage('assets/zodiac_wheel.png'), // Placeholder, add to pubspec.yaml
+                image: AssetImage('assets/zodiac_wheel.png'),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  Colors.black26,
+                  Colors.black54,
                   BlendMode.darken,
                 ),
               ),
             ),
             child: _compatibilityResult == null
-                ? _buildSelectionScreen(isDarkMode) // Show selection screen if no result
-                : _buildResultScreen(isDarkMode), // Show result screen if calculated
+                ? _buildSelectionScreen(isDarkMode)
+                : _buildResultScreen(isDarkMode),
           ),
         ),
       ),
@@ -156,306 +180,583 @@ class _CompatibilityTestScreenState extends State<CompatibilityTestScreen> {
   }
 
   Widget _buildSelectionScreen(bool isDarkMode) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Check love and business compatibility',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 16,
-              color: isDarkMode ? Colors.white70 : Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Left column for Sign 1 selection
-                SizedBox(
-                  width: 120,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _zodiacSigns.length,
-                    itemBuilder: (context, index) {
-                      final sign = _zodiacSigns[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedSign1 = sign['name'];
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedSign1 == sign['name']
-                                ? Colors.purple.withOpacity(0.7)
-                                : Colors.grey.withOpacity(0.3),
-                            foregroundColor: isDarkMode ? Colors.white : Colors.black87,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(sign['icon'], size: 30, color: Colors.white),
-                              const SizedBox(height: 5),
-                              Text(
-                                sign['name'],
-                                style: GoogleFonts.jetBrainsMono(),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Center "Go" button
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: (_selectedSign1 != null && _selectedSign2 != null)
-                          ? _calculateCompatibility
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.withOpacity(0.7),
-                        foregroundColor: Colors.white,
-                        shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(20),
-                        disabledBackgroundColor: Colors.grey.withOpacity(0.5),
+    return Stack(
+      children: [
+        Container(
+          color: Colors.black.withOpacity(0.3),
+        ),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Colors.purple, Colors.blue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Text(
+                  'Check Love & Business Compatibility',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
                       ),
-                      child: const Text(
-                        'Go',
-                        style: TextStyle(fontSize: 16),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 30),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 130,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _zodiacSigns.length,
+                        itemBuilder: (context, index) {
+                          final sign = _zodiacSigns[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: FadeInUp(
+                              duration: Duration(milliseconds: 500 + (index * 100)),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSign1 = sign['name'];
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: _selectedSign1 == sign['name']
+                                          ? [Colors.purple.withOpacity(0.7), Colors.blue.withOpacity(0.7)]
+                                          : [Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.5)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(sign['icon'], size: 30, color: Colors.white),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        sign['name'],
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(0.3),
+                                              blurRadius: 2,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-                // Right column for Sign 2 selection
-                SizedBox(
-                  width: 120,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _zodiacSigns.length,
-                    itemBuilder: (context, index) {
-                      final sign = _zodiacSigns[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedSign2 = sign['name'];
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedSign2 == sign['name']
-                                ? Colors.purple.withOpacity(0.7)
-                                : Colors.grey.withOpacity(0.3),
-                            foregroundColor: isDarkMode ? Colors.white : Colors.black87,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ZoomIn(
+                          duration: const Duration(milliseconds: 800),
+                          child: GestureDetector(
+                            onTap: (_selectedSign1 != null && _selectedSign2 != null && !_isLoading)
+                                ? _calculateCompatibility
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.all(25),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: (_selectedSign1 != null && _selectedSign2 != null && !_isLoading)
+                                      ? [Colors.purple, Colors.blue]
+                                      : [Colors.grey.withOpacity(0.5), Colors.grey.withOpacity(0.7)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                                  : const Text(
+                                'Go',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Icon(sign['icon'], size: 30, color: Colors.white),
-                              const SizedBox(height: 5),
-                              Text(
-                                sign['name'],
-                                style: GoogleFonts.jetBrainsMono(),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
                         ),
-                      );
-                    },
-                  ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 130,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _zodiacSigns.length,
+                        itemBuilder: (context, index) {
+                          final sign = _zodiacSigns[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: FadeInUp(
+                              duration: Duration(milliseconds: 500 + (index * 100)),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSign2 = sign['name'];
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: _selectedSign2 == sign['name']
+                                          ? [Colors.purple.withOpacity(0.7), Colors.blue.withOpacity(0.7)]
+                                          : [Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.5)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(sign['icon'], size: 30, color: Colors.white),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        sign['name'],
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(0.3),
+                                              blurRadius: 2,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildResultScreen(bool isDarkMode) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Zodiac Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
+      children: [
+        Container(
+          color: Colors.black.withOpacity(0.3),
+        ),
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    _zodiacSigns.firstWhere((sign) => sign['name'] == _selectedSign1)['icon'],
-                    color: Colors.purple,
-                    size: 40,
+              // Zodiac Header
+              FadeInDown(
+                duration: const Duration(milliseconds: 800),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.purple.withOpacity(0.3),
+                        Colors.blue.withOpacity(0.3),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    _selectedSign1!,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible( // Use Flexible to constrain the first zodiac sign
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _zodiacSigns.firstWhere((sign) => sign['name'] == _selectedSign1)['icon'],
+                              color: Colors.purple,
+                              size: MediaQuery.of(context).size.width * 0.08, // Dynamic size
+                            ),
+                            const SizedBox(width: 8), // Reduced spacing
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Colors.purple, Colors.blue],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: Text(
+                                _selectedSign1!,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: MediaQuery.of(context).size.width * 0.05, // Dynamic font size
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis, // Handle long text
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10), // Reduced spacing
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Colors.red, Colors.pink],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(10),
+                        child: const Text(
+                          '♥',
+                          style: TextStyle(fontSize: 20, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 10), // Reduced spacing
+                      Flexible( // Use Flexible to constrain the second zodiac sign
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Colors.purple, Colors.blue],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: Text(
+                                _selectedSign2!,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: MediaQuery.of(context).size.width * 0.05, // Dynamic font size
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis, // Handle long text
+                              ),
+                            ),
+                            const SizedBox(width: 8), // Reduced spacing
+                            Icon(
+                              _zodiacSigns.firstWhere((sign) => sign['name'] == _selectedSign2)['icon'],
+                              color: Colors.purple,
+                              size: MediaQuery.of(context).size.width * 0.08, // Dynamic size
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Progress Circles
+              FadeInUp(
+                duration: const Duration(milliseconds: 800),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.purple.withOpacity(0.2),
+                        Colors.blue.withOpacity(0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildProgressCircle(
+                        'Love',
+                        _compatibilityResult!.love,
+                        const LinearGradient(colors: [Colors.red, Colors.pink]),
+                      ),
+                      _buildProgressCircle(
+                        'Business',
+                        _compatibilityResult!.business,
+                        const LinearGradient(colors: [Colors.green, Colors.teal]),
+                      ),
+                      _buildProgressCircle(
+                        'Health',
+                        _compatibilityResult!.health,
+                        const LinearGradient(colors: [Colors.purple, Colors.blue]),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Horoscope Sections
+              FadeInUp(
+                duration: const Duration(milliseconds: 800),
+                child: ExpansionTile(
+                  leading: const Icon(Icons.star, color: Colors.purple),
+                  title: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Colors.purple, Colors.blue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: Text(
+                      'Overall Horoscope',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(width: 20),
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.purple.withOpacity(0.7),
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  collapsedBackgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
+                  ),
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Text(
+                        _compatibilityResult!.overall,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.all(10),
-                child: const Text(
-                  '♥',
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
               ),
-              const SizedBox(width: 20),
-              Row(
-                children: [
-                  Text(
-                    _selectedSign2!,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+              const SizedBox(height: 15),
+              FadeInUp(
+                duration: const Duration(milliseconds: 800),
+                child: ExpansionTile(
+                  leading: const Icon(Icons.favorite, color: Colors.red),
+                  title: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Colors.purple, Colors.blue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: Text(
+                      'Love & Passion',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Icon(
-                    _zodiacSigns.firstWhere((sign) => sign['name'] == _selectedSign2)['icon'],
-                    color: Colors.purple,
-                    size: 40,
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  collapsedBackgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
                   ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Progress Circles
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildProgressCircle('Love', _compatibilityResult!['love'], Colors.red),
-              _buildProgressCircle('Business', _compatibilityResult!['business'], Colors.green),
-              _buildProgressCircle('Health', _compatibilityResult!['health'], Colors.purple),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Horoscope Sections
-          ExpansionTile(
-            title: Text(
-              'Overall horoscope',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Text(
-                  _compatibilityResult!['overall'],
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
                   ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Text(
+                        _compatibilityResult!.loveDescription,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              FadeInUp(
+                duration: const Duration(milliseconds: 800),
+                child: ExpansionTile(
+                  leading: const Icon(Icons.work, color: Colors.green),
+                  title: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Colors.purple, Colors.blue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: Text(
+                      'Business & Career',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  collapsedBackgroundColor: isDarkMode ? Colors.grey[800] : Colors.white.withOpacity(0.8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
+                  ),
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: Colors.purple.withOpacity(0.2)),
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Text(
+                        _compatibilityResult!.businessDescription,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          ExpansionTile(
-            title: Text(
-              'Love & Passion',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Text(
-                  _compatibilityResult!['loveDescription'],
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          ExpansionTile(
-            title: Text(
-              'Business & Career',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Text(
-                  _compatibilityResult!['businessDescription'],
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildProgressCircle(String label, int percentage, Color color) {
+  Widget _buildProgressCircle(String label, int percentage, LinearGradient gradient) {
     return Column(
       children: [
-        SizedBox(
-          width: 60,
-          height: 60,
-          child: CircularProgressIndicator(
-            value: percentage / 100,
-            backgroundColor: Colors.grey.withOpacity(0.3),
-            color: color,
-            strokeWidth: 6,
+        CircularPercentIndicator(
+          radius: MediaQuery.of(context).size.width * 0.1, // Dynamic size based on screen width
+          lineWidth: 6.0,
+          percent: percentage / 100,
+          center: Text(
+            '$percentage%',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: MediaQuery.of(context).size.width * 0.035, // Dynamic font size
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  color: Colors.purple.withOpacity(0.7),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
           ),
+          backgroundColor: Colors.grey.withOpacity(0.3),
+          linearGradient: gradient,
+          animation: true,
+          animationDuration: 1000,
+          circularStrokeCap: CircularStrokeCap.round,
         ),
-        const SizedBox(height: 5),
-        Text(
-          '$percentage%',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 14,
-            color: Colors.white,
-          ),
-        ),
+        const SizedBox(height: 10),
         Text(
           label,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 12,
-            color: Colors.white70,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
         ),
       ],

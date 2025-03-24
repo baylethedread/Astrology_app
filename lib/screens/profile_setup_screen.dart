@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfileSetupScreen extends StatefulWidget {
   @override
@@ -19,24 +21,94 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final TextEditingController _locationController = TextEditingController();
   String? _selectedZodiacSign;
   File? _profileImage;
+  String? _coordinates;
 
   final List<String> zodiacSigns = [
     "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
     "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
   ];
 
+  Future<String?> _getCoordinatesFromLocation(String location) async {
+    // Use Nominatim API to convert the location into coordinates
+    final url = Uri.parse(
+      'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(location)}&format=json&limit=1',
+    );
+
+    try {
+      // Nominatim requires a User-Agent header to identify the app
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'YourAppName/1.0 (your.email@example.com)'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          final lat = data[0]['lat'];
+          final lon = data[0]['lon'];
+          return '$lat,$lon'; // Format: "latitude,longitude"
+        } else {
+          throw Exception('Location not found');
+        }
+      } else {
+        throw Exception('Failed to fetch coordinates: ${response.statusCode}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching coordinates: $e')),
+      );
+      return null;
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
+      // Show confirmation dialog
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Profile'),
+            content: const Text('Are you sure you want to save your profile with these details?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+
+      // Show loading indicator while fetching coordinates
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+
+      // Fetch coordinates for the entered location
+      if (_locationController.text.isNotEmpty) {
+        _coordinates = await _getCoordinatesFromLocation(_locationController.text);
+        if (_coordinates == null) {
+          Navigator.pop(context); // Close the loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to fetch location coordinates. Please try again.')),
+          );
+          return;
+        }
+      }
+
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return Center(child: CircularProgressIndicator());
-          },
-        );
-
         try {
           String? profileImageUrl;
           if (_profileImage != null) {
@@ -49,17 +121,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             'name': _nameController.text,
             'birthDate': _birthDateController.text,
             'birthTime': _birthTimeController.text,
-            'location': _locationController.text,
+            'birthLocation': _coordinates,
+            'birthLocationName': _locationController.text, // Store the place name
             'zodiacSign': _selectedZodiacSign,
             'profileImageUrl': profileImageUrl,
             'createdAt': FieldValue.serverTimestamp(),
             'profileComplete': true,
           });
 
-          Navigator.pop(context);
+          Navigator.pop(context); // Close the loading dialog
           Navigator.pushReplacementNamed(context, '/home');
         } catch (e) {
-          Navigator.pop(context);
+          Navigator.pop(context); // Close the loading dialog
           String errorMessage = e.toString().contains('network')
               ? 'Network error, please try again later'
               : 'Error saving profile: $e';
@@ -108,7 +181,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return "Sagittarius";
     if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return "Capricorn";
     if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return "Aquarius";
-    return "Pisces"; // (month == 2 && day >= 19) || (month == 3 && day <= 20)
+    return "Pisces";
   }
 
   @override
@@ -207,11 +280,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 TextFormField(
                   controller: _locationController,
                   decoration: InputDecoration(
-                    labelText: "Birth Location",
+                    labelText: "Birth Location (e.g., New York)",
                     labelStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                     focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: isDarkMode ? Colors.white : Colors.black)),
                   ),
                   validator: (value) => value == null || value.isEmpty ? "Enter your birth location" : null,
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  "Location data provided by OpenStreetMap (Nominatim).",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 15),
                 DropdownButtonFormField<String>(
